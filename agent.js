@@ -2,6 +2,10 @@ import * as cheerio from "cheerio";
 import fetch from "node-fetch";
 import { Document } from "@langchain/core/documents";
 
+
+
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+
 class CustomCheerioWebLoader {
   constructor(url) {
     this.url = url;
@@ -34,4 +38,23 @@ const docsArrays = await Promise.all(
 const docs = docsArrays.flat();
 
 console.log(`Loaded ${docs.length} documents`);
-console.log(docs[0]);
+// console.log(docs[0]);
+
+
+
+const textSplitter = new RecursiveCharacterTextSplitter({
+  chunkSize: 500,
+  chunkOverlap: 50,
+});
+const docSplits = await textSplitter.splitDocuments(docs);
+
+
+
+console.log(`Split into ${docSplits.length} documents`);
+console.log(docSplits[0]);
+
+
+
+
+
+
