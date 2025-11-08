@@ -8,5 +8,22 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "dependencies": {
+    "@langchain/community": "^0.0.40",
+    "@langchain/core": "^1.0.3",
+    "@langchain/langgraph": "^1.0.1",
+    "@langchain/openai": "^1.0.0",
+    "@langchain/textsplitters": "^1.0.0",
+    "cheerio": "^1.1.2",
+    "langchain": "^1.0.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vikralyadav/custom_rag.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vikralyadav/custom_rag/issues"
+  },
+  "homepage": "https://github.com/vikralyadav/custom_rag#readme",
   "description": ""
 }
