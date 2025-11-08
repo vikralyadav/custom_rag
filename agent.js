@@ -18,8 +18,11 @@ import { createRetrieverTool } from "@langchain/classic/tools/retriever";
 
 
 import { MemoryVectorStore } from "@langchain/classic/vectorstores/memory";
-import { OpenAIEmbeddings } from "@langchain/openai";
 import { OllamaEmbeddings } from "@langchain/community/embeddings/ollama";
+
+
+
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 
 class CustomCheerioWebLoader {
   constructor(url) {
@@ -100,3 +103,38 @@ const tools = [tool];
 
 console.log("Created retriever tool:", tools[0].name);
 
+
+
+
+
+const API_KEY=process.env.GOOGLE_API_KEY;
+
+
+
+
+// const model = new ChatOpenAI({
+//     model: "gpt-4o",
+//     temperature: 0,
+//   }).bindTools(tools);  
+
+
+
+async function generateQueryOrRespond(state) {
+  const { messages } = state;
+
+
+  const model = new ChatGoogleGenerativeAI({    
+    apiKey: API_KEY,
+    model: "gemini-1.5-pro",
+    temperature: 0,  
+  }).bindTools(tools);
+  
+
+  const response = await model.invoke(messages);
+  return {
+    messages: [response],
+  };
+}
+
+
+console.log("Initialized model with tools.");
