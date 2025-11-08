@@ -3,8 +3,23 @@ import fetch from "node-fetch";
 import { Document } from "@langchain/core/documents";
 
 
+import {config} from "dotenv";
+config();
+
+
+
 
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+
+
+
+import { createRetrieverTool } from "@langchain/classic/tools/retriever";
+
+
+
+import { MemoryVectorStore } from "@langchain/classic/vectorstores/memory";
+import { OpenAIEmbeddings } from "@langchain/openai";
+import { OllamaEmbeddings } from "@langchain/community/embeddings/ollama";
 
 class CustomCheerioWebLoader {
   constructor(url) {
@@ -51,10 +66,37 @@ const docSplits = await textSplitter.splitDocuments(docs);
 
 
 console.log(`Split into ${docSplits.length} documents`);
-console.log(docSplits[0]);
+// console.log(docSplits[0]);
+
+
+
+const api_key = process.env.OPENAI_API_KEY;
+
+
+const vectorStore = await MemoryVectorStore.fromDocuments(
+  docSplits,
+  new OllamaEmbeddings({model: "all-minilm:latest"}),
+);
+
+const retriever = vectorStore.asRetriever();
+
+
+
+console.log("Setup complete. You can now use the retriever to fetch relevant documents.");
 
 
 
 
+const tool = createRetrieverTool(
+  retriever,
+  {
+    name: "retrieve_blog_posts",
+    description:
+      "Search and return information about Lilian Weng blog posts on LLM agents, prompt engineering, and adversarial attacks on LLMs.",
+  },
+);
+const tools = [tool];
 
+
+console.log("Created retriever tool:", tools[0].name);
 
