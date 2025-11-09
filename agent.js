@@ -24,6 +24,11 @@ import { OllamaEmbeddings } from "@langchain/community/embeddings/ollama";
 
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 
+
+
+import { HumanMessage } from "@langchain/core/messages";
+import { Ollama } from "@langchain/community/llms/ollama";
+
 class CustomCheerioWebLoader {
   constructor(url) {
     this.url = url;
@@ -123,11 +128,11 @@ async function generateQueryOrRespond(state) {
   const { messages } = state;
 
 
-  const model = new ChatGoogleGenerativeAI({    
-    apiKey: API_KEY,
-    model: "gemini-1.5-pro",
-    temperature: 0,  
-  }).bindTools(tools);
+const model = new Ollama({
+  baseUrl: "http://localhost:11434",
+  model: "mistral", 
+  temperature: 0,
+});
   
 
   const response = await model.invoke(messages);
@@ -138,3 +143,20 @@ async function generateQueryOrRespond(state) {
 
 
 console.log("Initialized model with tools.");
+
+
+
+
+// const input = { messages: [new HumanMessage("hello!")] };
+// const result = await generateQueryOrRespond(input);
+// console.log(result.messages[0]);
+
+
+
+const input = {
+  messages: [
+    new HumanMessage("What does Lilian Weng say about types of reward hacking?")
+  ]
+};
+const result = await generateQueryOrRespond(input);
+console.log(result.messages[0]);
