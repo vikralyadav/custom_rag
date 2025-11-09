@@ -34,6 +34,11 @@ import { ToolMessage } from "@langchain/core/messages";
 
 
 
+import { StateGraph, START, END } from "@langchain/langgraph";
+import { ToolNode } from "@langchain/langgraph/prebuilt";
+
+
+
 
 import { HumanMessage } from "@langchain/core/messages";
 import { Ollama } from "@langchain/community/llms/ollama";
@@ -376,3 +381,76 @@ const response = await generate(input);
 console.log(response.messages[0].content);
 
 
+const toolNode = new ToolNode(tools);
+
+
+
+
+function shouldRetrieve(state) {
+  const { messages } = state;
+  const lastMessage = messages.at(-1);
+
+  if (AIMessage.isInstance(lastMessage) && lastMessage.tool_calls.length) {
+    return "retrieve";
+  }
+  return END;
+}
+
+
+
+// const GraphState = {
+//   context: {},
+//   input: "",
+//   output: "",
+// };
+
+
+
+const builder = new StateGraph(GraphState)
+  .addNode("generateQueryOrRespond", generateQueryOrRespond)
+  .addNode("retrieve", toolNode)
+  .addNode("gradeDocuments", gradeDocuments)
+  .addNode("rewrite", rewrite)
+  .addNode("generate", generate)
+
+  .addEdge(START, "generateQueryOrRespond")
+
+  .addConditionalEdges("generateQueryOrRespond", shouldRetrieve)
+  .addEdge("retrieve", "gradeDocuments")
+
+  .addConditionalEdges(
+    "gradeDocuments",
+  
+    (state) => {
+    
+      const lastMessage = state.messages.at(-1);
+      return lastMessage.content === "generate" ? "generate" : "rewrite";
+    }
+  )
+  .addEdge("generate", END)
+  .addEdge("rewrite", "generateQueryOrRespond");
+
+const graph = builder.compile();
+
+
+
+
+
+const inputs = {
+  messages: [
+    new HumanMessage("What does Lilian Weng say about types of reward hacking?")
+  ]
+};
+
+for await (const output of await graph.stream(inputs)) {
+  for (const [key, value] of Object.entries(output)) {
+    const lastMsg = output[key].messages[output[key].messages.length - 1];
+    console.log(`Output from node: '${key}'`);
+    console.log({
+      type: lastMsg._getType(),
+      content: lastMsg.content,
+      tool_calls: lastMsg.tool_calls,
+    });
+    console.log("---\n");
+  }
+}
