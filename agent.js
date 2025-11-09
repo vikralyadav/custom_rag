@@ -22,7 +22,16 @@ import { OllamaEmbeddings } from "@langchain/community/embeddings/ollama";
 
 
 
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+
+
+
+import * as z from "zod";
+import { ChatPromptTemplate } from "@langchain/core/prompts";
+import { AIMessage } from "@langchain/core/messages";
+
+
+import { ToolMessage } from "@langchain/core/messages";
+
 
 
 
@@ -153,10 +162,80 @@ console.log("Initialized model with tools.");
 
 
 
+// const input = {
+//   messages: [
+//     new HumanMessage("What does Lilian Weng say about types of reward hacking?")
+//   ]
+// };
+// const result = await generateQueryOrRespond(input);
+// console.log(result.messages[0]);
+
+
+
+
+const prompt = ChatPromptTemplate.fromTemplate(
+  `You are a grader assessing relevance of retrieved docs to a user question.
+  Here are the retrieved docs:
+  \n ------- \n
+  {context}
+  \n ------- \n
+  Here is the user question: {question}
+  If the content of the docs are relevant to the users question, score them as relevant.
+  Give a binary score 'yes' or 'no' score to indicate whether the docs are relevant to the question.
+  Yes: The docs are relevant to the question.
+  No: The docs are not relevant to the question.`,
+);
+
+const gradeDocumentsSchema = z.object({
+  binaryScore: z.string().describe("Relevance score 'yes' or 'no'"),  
+})
+
+async function gradeDocuments(state) {
+  const { messages } = state;
+
+ const model = new Ollama({
+  baseUrl: "http://localhost:11434",
+  model: "mistral", 
+  temperature: 0,
+});
+
+  const score = await prompt.pipe(model).invoke({
+    question: messages.at(0)?.content,
+    context: messages.at(-1)?.content,
+  });
+
+  if (score.binaryScore === "yes") {
+    return "generate";
+  }
+  return "rewrite";
+}
+
+
+
 const input = {
   messages: [
-    new HumanMessage("What does Lilian Weng say about types of reward hacking?")
+      new HumanMessage("What does Lilian Weng say about types of reward hacking?"),
+      new AIMessage({
+          tool_calls: [
+              {
+                  type: "tool_call",
+                  name: "retrieve_blog_posts",
+                  args: { query: "types of reward hacking" },
+                  id: "1",
+              }
+          ]
+      }),
+      new ToolMessage({
+          content: "meow",
+          tool_call_id: "1",
+      })
   ]
-};
-const result = await generateQueryOrRespond(input);
-console.log(result.messages[0]);
+}
+const res = await gradeDocuments(input);
+
+
+console.log("Grading result:", res);
+
+
+
+
