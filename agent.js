@@ -202,7 +202,7 @@ for await (const output of await graph.stream(inputs)) {
     const lastMsg = value.messages[value.messages.length - 1];
     console.log(`Output from node: '${key}'`);
     console.log({
-      type: lastMsg.type, // ✅ fixed
+      type: lastMsg.type, 
       content: lastMsg.content,
       tool_calls: lastMsg.tool_calls,
     });
