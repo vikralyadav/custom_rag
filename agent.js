@@ -212,30 +212,167 @@ async function gradeDocuments(state) {
 
 
 
+// const input = {
+//   messages: [
+//       new HumanMessage("What does Lilian Weng say about types of reward hacking?"),
+//       new AIMessage({
+//           tool_calls: [
+//               {
+//                   type: "tool_call",
+//                   name: "retrieve_blog_posts",
+//                   args: { query: "types of reward hacking" },
+//                   id: "1",
+//               }
+//           ]
+//       }),
+//       new ToolMessage({
+//           content: "meow",
+//           tool_call_id: "1",
+//       })
+//   ]
+// }
+// const res = await gradeDocuments(input);
+
+
+// console.log("Grading result:", res);
+
+// const input = {
+//   messages: [
+//       new HumanMessage("What does Lilian Weng say about types of reward hacking?"),
+//       new AIMessage({
+//           tool_calls: [
+//               {
+//                   type: "tool_call",
+//                   name: "retrieve_blog_posts",
+//                   args: { query: "types of reward hacking" },
+//                   id: "1",
+//               }
+//           ]
+//       }),
+//       new ToolMessage({
+//           content: "reward hacking can be categorized into two types: environment or goal misspecification, and reward tampering",
+//           tool_call_id: "1",
+//       })
+//   ]
+// }
+// const result = await gradeDocuments(input);
+
+
+console.log("Grading result:");
+
+
+
+
+const rewritePrompt = ChatPromptTemplate.fromTemplate(
+  `Look at the input and try to reason about the underlying semantic intent / meaning. \n
+  Here is the initial question:
+  \n ------- \n
+  {question}
+  \n ------- \n
+  Formulate an improved question:`,
+);
+
+async function rewrite(state) {
+  const { messages } = state;
+  const question = messages.at(0)?.content;
+
+  const model = new Ollama({
+  baseUrl: "http://localhost:11434",
+  model: "mistral", 
+  temperature: 0,
+});
+
+  const response = await rewritePrompt.pipe(model).invoke({ question });
+  return {
+    messages: [response],
+  };
+}
+
+
+
+
+
+// const input = {
+//   messages: [
+//     new HumanMessage("What does Lilian Weng say about types of reward hacking?"),
+//     new AIMessage({
+//       content: "",
+//       tool_calls: [
+//         {
+//           id: "1",
+//           name: "retrieve_blog_posts",
+//           args: { query: "types of reward hacking" },
+//           type: "tool_call"
+//         }
+//       ]
+//     }),
+//     new ToolMessage({ content: "meow", tool_call_id: "1" })
+//   ]
+// };
+
+// const response = await rewrite(input);
+// console.log("Rewritten question:");
+// console.log(response.messages[0].content);
+
+
+
+
+async function generate(state) {
+  const { messages } = state;
+  const question = messages.at(0)?.content;
+  const context = messages.at(-1)?.content;
+
+  const prompt = ChatPromptTemplate.fromTemplate(
+  `You are an assistant for question-answering tasks.
+      Use the following pieces of retrieved context to answer the question.
+      If you don't know the answer, just say that you don't know.
+      Use three sentences maximum and keep the answer concise.
+      Question: {question}
+      Context: {context}`
+  );
+
+  const llm = new Ollama({
+  baseUrl: "http://localhost:11434",
+  model: "mistral", 
+  temperature: 0,
+});
+
+  const ragChain = prompt.pipe(llm);
+
+  const response = await ragChain.invoke({
+    context,
+    question,
+  });
+
+  return {
+    messages: [response],
+  };
+}
+
+
+
 const input = {
   messages: [
-      new HumanMessage("What does Lilian Weng say about types of reward hacking?"),
-      new AIMessage({
-          tool_calls: [
-              {
-                  type: "tool_call",
-                  name: "retrieve_blog_posts",
-                  args: { query: "types of reward hacking" },
-                  id: "1",
-              }
-          ]
-      }),
-      new ToolMessage({
-          content: "meow",
-          tool_call_id: "1",
-      })
+    new HumanMessage("What does Lilian Weng say about types of reward hacking?"),
+    new AIMessage({
+      content: "",
+      tool_calls: [
+        {
+          id: "1",
+          name: "retrieve_blog_posts",
+          args: { query: "types of reward hacking" },
+          type: "tool_call"
+        }
+      ]
+    }),
+    new ToolMessage({
+      content: "reward hacking can be categorized into two types: environment or goal misspecification, and reward tampering",
+      tool_call_id: "1"
+    })
   ]
-}
-const res = await gradeDocuments(input);
+};
 
-
-console.log("Grading result:", res);
-
-
+const response = await generate(input);
+console.log(response.messages[0].content);
 
 
